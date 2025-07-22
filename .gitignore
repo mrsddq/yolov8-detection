@@ -1,0 +1,7 @@
+data/images/
+data/labels/
+runs/
+__pycache__/
+*.pyc
+.DS_Store
+.env
