@@ -1,115 +1,122 @@
 # YOLOv8 Object Detection
 
-Multi-class object detection on a custom street-scene dataset using YOLOv8. Covers the full pipeline: dataset preparation, annotation, training, evaluation, and inference.
+Portfolio-ready YOLOv8 object detection pipeline for a custom street-scene dataset.
 
-## Results
+The repository is structured for training, validation, and inference with Ultralytics YOLOv8. It does not ship private datasets or model weights; it provides reusable code, configs, and a result-reporting template.
 
-| Metric | Value |
-|---|---|
-| mAP@0.5 | 89% |
-| Image Resolution | 416×416 |
-| Classes | Cars, Pedestrians, Road Signs |
-| Precision | _add per-class breakdown_ |
-| Recall | _add per-class breakdown_ |
+## Highlights
+
+- YOLO-format dataset configuration
+- Training, evaluation, and inference scripts
+- Config validation utilities
+- Pytest checks for config integrity
+- Results template for honest experiment tracking
 
 ## Classes
 
 | ID | Name |
-|---|---|
+|---:|---|
 | 0 | car |
 | 1 | pedestrian |
 | 2 | road_sign |
 
-## Quickstart
+## Structure
+
+```text
+configs/
+  data.yaml
+  yolov8.yaml
+docs/
+  RESULTS_TEMPLATE.md
+scripts/
+  train.py
+  evaluate.py
+  infer.py
+  utils.py
+tests/
+  test_configs.py
+```
+
+## Setup
 
 ```bash
-git clone https://github.com/your-username/yolov8-detection
-cd yolov8-detection
+python -m venv .venv
+.venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Data
+## Dataset Layout
 
-Custom annotated dataset. Annotations in YOLO format (one `.txt` per image, normalised `cx cy w h`).
+The scripts expect YOLO-format labels:
 
-```
+```text
 data/
   images/
-    train/    ← training images
-    val/      ← validation images
-    test/     ← test images
+    train/
+    val/
+    test/
   labels/
-    train/    ← YOLO .txt annotations
+    train/
     val/
     test/
 ```
 
-Dataset is private. For a public equivalent use [COCO](https://cocodataset.org/) or [Open Images](https://storage.googleapis.com/openimages/web/index.html) filtered to the three classes above.
+Each label file should contain normalized `class_id cx cy width height` rows.
 
-## Training
+## Train
 
 ```bash
-python scripts/train.py --config configs/yolov8.yaml
+python -m scripts.train --config configs/yolov8.yaml
 ```
 
-Or directly with the Ultralytics CLI:
+Equivalent Ultralytics CLI command:
 
 ```bash
 yolo detect train data=configs/data.yaml model=yolov8s.pt epochs=100 imgsz=416 batch=16
 ```
 
-Key config in `configs/yolov8.yaml`:
-
-```yaml
-model: yolov8s.pt
-epochs: 100
-imgsz: 416
-batch: 16
-optimizer: SGD
-lr0: 0.01
-augment: true
-```
-
-## Evaluation
+## Evaluate
 
 ```bash
-python scripts/evaluate.py --weights runs/detect/train/weights/best.pt
+python -m scripts.evaluate --weights runs/detect/train/weights/best.pt --split val
 ```
 
-Auto-generated outputs in `runs/detect/val/`:
-- `confusion_matrix.png`
-- `PR_curve.png`
-- `results.png`
+For test-set evaluation:
+
+```bash
+python -m scripts.evaluate --weights runs/detect/train/weights/best.pt --split test
+```
 
 ## Inference
 
 ```bash
-python scripts/infer.py --weights runs/detect/train/weights/best.pt --source assets/sample.jpg
+python -m scripts.infer --weights runs/detect/train/weights/best.pt --source assets/sample.jpg
 ```
 
-## Sample Outputs
+Predictions are saved under `runs/detect/infer/` by default.
 
-| File | Contents |
-|---|---|
-| `assets/01_prediction_clean.png` | Clean detection: all 3 classes correctly boxed |
-| `assets/02_prediction_crowded.png` | Dense scene with NMS |
-| `assets/03_confusion_matrix.png` | Class-level confusion matrix |
-| `assets/04_pr_curve.png` | Precision-Recall curve (mAP@0.5 labelled) |
-| `assets/05_results_plot.png` | Loss + mAP across all training epochs |
-| `assets/06_dataset_sample.png` | Training mosaic with GT boxes |
-| `assets/07_failure_case.png` | Missed detection + annotated reason |
+## Testing
+
+```bash
+pytest
+```
+
+## Results
+
+No public model weights or verified metrics are committed in this repository. After training, record real metrics in [docs/RESULTS_TEMPLATE.md](docs/RESULTS_TEMPLATE.md) and add sample prediction images under `assets/`.
+
+Recommended artifacts:
+
+- `assets/prediction-clean.png`
+- `assets/prediction-crowded.png`
+- `assets/confusion-matrix.png`
+- `assets/pr-curve.png`
+- `assets/results-plot.png`
+- `assets/failure-case.png`
 
 ## Limitations
 
-- mAP reported at 416×416; higher resolution improves small-object recall
-- Dataset is single-domain (street scene); cross-domain generalisation not tested
-- No tracking or temporal smoothing — per-frame detection only
-
-## Environment
-
-```
-Python 3.10
-ultralytics==8.0.196
-torch==2.1.0
-CUDA 11.8
-```
+- Dataset is not included.
+- Model weights are not included.
+- Reported metrics should be treated as experiment-specific until reproduced.
+- This is frame-level detection only; it does not include tracking or temporal smoothing.
