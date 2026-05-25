@@ -1,0 +1,15 @@
+seed: 42
+model: yolov8n.pt
+data: configs/visdrone_data.yaml
+epochs: 100
+imgsz: 640
+batch: 16
+optimizer: SGD
+lr0: 0.01
+lrf: 0.01
+momentum: 0.937
+weight_decay: 0.0005
+warmup_epochs: 3
+augment: true
+project: runs/visdrone
+name: yolov8n_baseline
