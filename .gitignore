@@ -10,3 +10,12 @@ __pycache__/
 weights/
 assets/*.pt
 assets/*.onnx
+*.py[cod]
+venv/
+node_modules/
+dist/
+build/
+coverage/
+reports/
+outputs/
+*.log
