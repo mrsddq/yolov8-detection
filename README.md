@@ -109,10 +109,11 @@ pytest
 
 ## Results
 
-No public model weights or verified metrics are committed in this repository. After training, record real metrics in [docs/RESULTS_TEMPLATE.md](docs/RESULTS_TEMPLATE.md) and add sample prediction images under `assets/`.
+No verified public metrics are committed yet. No public model weights are committed in this repository. After training, record real metrics in [docs/RESULTS_TEMPLATE.md](docs/RESULTS_TEMPLATE.md) and add sample prediction images under `assets/`.
 
 Research support docs:
 
+- [Portfolio Evidence Plan](docs/PORTFOLIO_EVIDENCE.md)
 - [Reproducibility Plan](docs/REPRODUCIBILITY.md)
 - [Architecture Rationale](docs/ARCHITECTURE_RATIONALE.md)
 - [Ablation Plan](docs/ABLATION_PLAN.md)
