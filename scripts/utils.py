@@ -33,11 +33,24 @@ def validate_yolo_data_config(path):
     names = config["names"]
     if not isinstance(names, dict) or not names:
         raise ValueError("YOLO data config must define class names as a non-empty mapping")
+    if "nc" in config and int(config["nc"]) != len(names):
+        raise ValueError("YOLO data config nc must match the number of class names")
+    expected_indices = set(range(len(names)))
+    actual_indices = {int(index) for index in names}
+    if actual_indices != expected_indices:
+        raise ValueError("YOLO class names must use contiguous zero-based indices")
     return config
 
 
 def validate_train_config(path):
+    config_path = Path(path)
     config = load_yaml(path)
     validate_keys(config, REQUIRED_TRAIN_KEYS, "YOLO train config")
-    validate_yolo_data_config(config["data"])
+    for key in ("epochs", "imgsz", "batch"):
+        if int(config[key]) <= 0:
+            raise ValueError(f"YOLO train config {key} must be positive")
+    data_path = Path(config["data"])
+    if not data_path.is_absolute():
+        data_path = config_path.parent.parent / data_path
+    validate_yolo_data_config(data_path)
     return config
