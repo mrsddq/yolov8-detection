@@ -47,7 +47,7 @@ tests/
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -75,11 +75,9 @@ Each label file should contain normalized `class_id cx cy width height` rows.
 python -m scripts.train --config configs/yolov8.yaml
 ```
 
-Equivalent Ultralytics CLI command:
-
-```bash
-yolo detect train data=configs/data.yaml model=yolov8s.pt epochs=100 imgsz=416 batch=16
-```
+Use this wrapper when you need the dataset gate and persisted absolute dataset
+configuration. Direct Ultralytics commands bypass those safeguards and may resolve
+relative dataset paths using a different global directory.
 
 ## Evaluate
 
