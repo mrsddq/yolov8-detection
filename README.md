@@ -159,3 +159,9 @@ to the image, rejects invalid dimensions, and skips boxes wholly outside the ima
 CI exercises synthetic images and labels only. No detector is trained and no
 mAP claim is inferred from those tests. Hash checks catch exact duplicates, not
 near-duplicate frames; use scene/video-level splits to prevent temporal leakage.
+
+The trainer persists a content-addressed resolved dataset YAML under
+`<project>/validated-data/` with absolute root/split paths and passes that file to
+Ultralytics. This prevents its global datasets-directory setting from selecting a
+different dataset than the validator, and supports an absolute training-config
+path from another working directory. Keep that resolved YAML with run artifacts.

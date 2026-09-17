@@ -51,3 +51,32 @@ def test_visdrone_clips_boundary_and_requires_annotations(tmp_path):
     label.unlink()
     with pytest.raises(FileNotFoundError):
         convert_split(tmp_path, out, "train")
+
+
+
+def test_trainer_receives_exact_validated_paths_from_other_cwd(tmp_path, monkeypatch):
+    import sys
+    import types
+    import yaml
+    from scripts.train import main
+    root = tmp_path / "repo"; root.mkdir()
+    data = make_dataset(root)
+    configs = root / "configs"; configs.mkdir()
+    data.write_text(data.read_text().replace(str(root), "."))
+    data.rename(configs / "data.yaml")
+    train = configs / "train.yaml"
+    train.write_text("model: local.pt\ndata: configs/data.yaml\nepochs: 1\nimgsz: 32\nbatch: 1\n")
+    received = {}
+    class FakeYOLO:
+        def __init__(self, weights):
+            assert weights == "local.pt"
+        def train(self, **kwargs):
+            received.update(kwargs)
+    monkeypatch.setitem(sys.modules, "ultralytics", types.SimpleNamespace(YOLO=FakeYOLO))
+    elsewhere = tmp_path / "elsewhere"; elsewhere.mkdir()
+    monkeypatch.chdir(elsewhere)
+    main(train)
+    resolved = yaml.safe_load(Path(received["data"]).read_text())
+    assert resolved["path"] == str(root.resolve())
+    assert resolved["train"] == str(root / "images/train")
+    assert resolved["val"] == str(root / "images/val")
