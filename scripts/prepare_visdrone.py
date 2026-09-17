@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 from pathlib import Path
 
 from PIL import Image
@@ -23,6 +24,10 @@ VISDRONE_TO_YOLO = {
 def convert_split(source_root: Path, output_root: Path, split: str) -> None:
     images_dir = source_root / f"VisDrone2019-DET-{split}" / "images"
     ann_dir = source_root / f"VisDrone2019-DET-{split}" / "annotations"
+    if not images_dir.is_dir() or not ann_dir.is_dir():
+        raise FileNotFoundError(f"Missing VisDrone images or annotations for {split}")
+    if not list(images_dir.glob("*.jpg")):
+        raise ValueError(f"No JPG images found for {split}")
     out_images = output_root / "images" / split
     out_labels = output_root / "labels" / split
     out_images.mkdir(parents=True, exist_ok=True)
@@ -38,11 +43,20 @@ def convert_split(source_root: Path, output_root: Path, split: str) -> None:
                 cls = int(cls)
                 if int(score) == 0 or cls not in VISDRONE_TO_YOLO:
                     continue
+                if not all(math.isfinite(x) for x in (left, top, box_w, box_h)) or box_w <= 0 or box_h <= 0:
+                    raise ValueError(f"Invalid box in {annotation_path}")
+                right, bottom = min(width, left + box_w), min(height, top + box_h)
+                left, top = max(0.0, left), max(0.0, top)
+                box_w, box_h = right - left, bottom - top
+                if box_w <= 0 or box_h <= 0:
+                    continue
                 x_center = (left + box_w / 2.0) / width
                 y_center = (top + box_h / 2.0) / height
                 label_lines.append(
                     f"{VISDRONE_TO_YOLO[cls]} {x_center:.6f} {y_center:.6f} {box_w / width:.6f} {box_h / height:.6f}"
                 )
+        else:
+            raise FileNotFoundError(f"Missing annotation: {annotation_path}")
         target_image = out_images / image_path.name
         if not target_image.exists():
             target_image.write_bytes(image_path.read_bytes())

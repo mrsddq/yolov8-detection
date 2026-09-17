@@ -136,3 +136,26 @@ Recommended artifacts:
 - Model weights are not included.
 - Reported metrics should be treated as experiment-specific until reproduced.
 - This is frame-level detection only; it does not include tracking or temporal smoothing.
+
+## Dataset gates before training
+
+```bash
+pip install -r requirements-test.txt
+python -m pytest -q
+python -m scripts.validate_dataset --data configs/data.yaml --splits train val
+```
+
+The validator needs only Pillow/PyYAML, no Ultralytics or downloaded weights. It
+opens every image, requires explicit label files (empty files identify verified
+backgrounds), checks finite normalized box bounds and class IDs, and rejects
+identical file content across training/validation splits. `scripts.train` runs
+this gate before loading YOLO. The supported layout is `images/<split>` plus
+`labels/<split>` under `path`; relative `path` is resolved from the repository
+root (the parent of the configuration directory). Split manifests and arbitrary
+external directory mappings are not implemented.
+
+VisDrone conversion fails for missing annotations, clips boundary-crossing boxes
+to the image, rejects invalid dimensions, and skips boxes wholly outside the image.
+CI exercises synthetic images and labels only. No detector is trained and no
+mAP claim is inferred from those tests. Hash checks catch exact duplicates, not
+near-duplicate frames; use scene/video-level splits to prevent temporal leakage.
