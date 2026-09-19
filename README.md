@@ -47,7 +47,7 @@ tests/
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate
+source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -75,11 +75,9 @@ Each label file should contain normalized `class_id cx cy width height` rows.
 python -m scripts.train --config configs/yolov8.yaml
 ```
 
-Equivalent Ultralytics CLI command:
-
-```bash
-yolo detect train data=configs/data.yaml model=yolov8s.pt epochs=100 imgsz=416 batch=16
-```
+Use this wrapper when you need the dataset gate and persisted absolute dataset
+configuration. Direct Ultralytics commands bypass those safeguards and may resolve
+relative dataset paths using a different global directory.
 
 ## Evaluate
 
@@ -136,3 +134,32 @@ Recommended artifacts:
 - Model weights are not included.
 - Reported metrics should be treated as experiment-specific until reproduced.
 - This is frame-level detection only; it does not include tracking or temporal smoothing.
+
+## Dataset gates before training
+
+```bash
+pip install -r requirements-test.txt
+python -m pytest -q
+python -m scripts.validate_dataset --data configs/data.yaml --splits train val
+```
+
+The validator needs only Pillow/PyYAML, no Ultralytics or downloaded weights. It
+opens every image, requires explicit label files (empty files identify verified
+backgrounds), checks finite normalized box bounds and class IDs, and rejects
+identical file content across training/validation splits. `scripts.train` runs
+this gate before loading YOLO. The supported layout is `images/<split>` plus
+`labels/<split>` under `path`; relative `path` is resolved from the repository
+root (the parent of the configuration directory). Split manifests and arbitrary
+external directory mappings are not implemented.
+
+VisDrone conversion fails for missing annotations, clips boundary-crossing boxes
+to the image, rejects invalid dimensions, and skips boxes wholly outside the image.
+CI exercises synthetic images and labels only. No detector is trained and no
+mAP claim is inferred from those tests. Hash checks catch exact duplicates, not
+near-duplicate frames; use scene/video-level splits to prevent temporal leakage.
+
+The trainer persists a content-addressed resolved dataset YAML under
+`<project>/validated-data/` with absolute root/split paths and passes that file to
+Ultralytics. This prevents its global datasets-directory setting from selecting a
+different dataset than the validator, and supports an absolute training-config
+path from another working directory. Keep that resolved YAML with run artifacts.

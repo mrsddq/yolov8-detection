@@ -1,39 +1,50 @@
-﻿# Engineering Runbook
+# YOLOv8 detection engineering runbook
 
-## Repository Profile
+This repository wraps Ultralytics detection with dataset validation and VisDrone
+conversion. See the [README setup](../README.md#setup),
+[dataset gates](../README.md#dataset-gates-before-training), and
+[training command](../README.md#train). Full detector execution uses
+`requirements.txt`; the lightweight test dependencies do not install Ultralytics.
 
-- Repository: $repoName
-- Classification: Python project
-- Tracked files: 28
-- Python files: 9
-- JavaScript/TypeScript files: 0
-- Notebooks: 0
-- Terraform files: 0
+## Local verification
 
-## Setup
+Run from the repository root with Python 3.12:
 
-``bash
-python -m pip install -r requirements.txt
-``
+```bash
+python -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-test.txt
+OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m pytest -q
+```
 
-## Verification
+Dependency installation needs package-network access. Once installed, the test
+suite runs on CPU with generated fixtures and does not download model weights or
+datasets. On Windows, activate with `.venv\Scripts\Activate.ps1` in PowerShell
+and run `python -m pytest -q`.
 
-``bash
-python -m unittest discover -s tests
-python -m compileall -q .
-``
+Tests use generated images/labels and a mocked trainer to check class IDs, box
+bounds, missing annotations, exact duplicate files across splits, VisDrone box
+clipping, and consistent dataset paths from another working directory. They do
+not train a detector or measure mAP.
 
-## Release Hygiene
+## Data and artifact contract
 
-- Keep generated outputs, caches, local datasets, virtual environments, and dependency folders out of git.
-- Prefer deterministic commands over manual notebook or console-only steps.
-- Document required secrets and environment variables instead of committing them.
-- Keep Dockerfiles, CI workflows, and tests aligned with the actual project stack.
-- Treat learning or reference material honestly as reference material; do not present it as production service code unless it has service-grade tests, deployment, and operations docs.
+```bash
+python -m scripts.validate_dataset --data configs/data.yaml --splits train val
+python -m scripts.train --config configs/yolov8.yaml
+```
 
-## Maintenance Checklist
+- Use matching `images/<split>` and `labels/<split>` trees. Each image needs a label
+  file; an empty file explicitly marks a verified background image.
+- The training wrapper runs validation before loading weights. It writes an
+  absolute, content-addressed dataset YAML under `<project>/validated-data/` and
+  passes that exact configuration to Ultralytics. Retain it with run artifacts.
+- Direct Ultralytics calls bypass this wrapper. Do not assume its global dataset
+  root matches the repository-relative paths checked by this validator.
+- Keep original images, downloaded/trained weights and `runs/` outside version
+  control. Record dataset license, scene/video split, weights source and exact
+  command when reporting real metrics.
+- Hash checks detect byte-identical images, not near-duplicate video frames. Use
+  scene/video-level splits and inspect suspicious overlap separately.
 
-- Review dependencies quarterly.
-- Run tests before every push.
-- Confirm git status --short is clean before packaging.
-- Include .git only when an external submission explicitly requires repository history.
+A passing software suite does not establish detection quality on a real dataset.
