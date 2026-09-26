@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import shutil
 from pathlib import Path
 
 from PIL import Image
@@ -58,8 +59,7 @@ def convert_split(source_root: Path, output_root: Path, split: str) -> None:
         else:
             raise FileNotFoundError(f"Missing annotation: {annotation_path}")
         target_image = out_images / image_path.name
-        if not target_image.exists():
-            target_image.write_bytes(image_path.read_bytes())
+        shutil.copyfile(image_path, target_image)
         (out_labels / f"{image_path.stem}.txt").write_text("\n".join(label_lines) + "\n", encoding="utf-8")
 
 

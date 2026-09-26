@@ -80,3 +80,16 @@ def test_trainer_receives_exact_validated_paths_from_other_cwd(tmp_path, monkeyp
     assert resolved["path"] == str(root.resolve())
     assert resolved["train"] == str(root / "images/train")
     assert resolved["val"] == str(root / "images/val")
+def test_visdrone_rerun_refreshes_images_with_updated_labels(tmp_path):
+    source = tmp_path / "VisDrone2019-DET-train"
+    (source / "images").mkdir(parents=True)
+    (source / "annotations").mkdir()
+    image = source / "images/a.jpg"
+    Image.new("RGB", (100, 100), "red").save(image)
+    (source / "annotations/a.txt").write_text("0,0,20,20,1,1,0,0\n")
+    output = tmp_path / "converted"
+    convert_split(tmp_path, output, "train")
+    Image.new("RGB", (200, 200), "blue").save(image)
+    convert_split(tmp_path, output, "train")
+    assert (output / "images/train/a.jpg").read_bytes() == image.read_bytes()
+    assert validate_label(output / "labels/train/a.txt", 10)[0] == [0, 0.05, 0.05, 0.1, 0.1]
